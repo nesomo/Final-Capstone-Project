@@ -323,6 +323,8 @@ boxplot(complete.df$CLTV, ylab = "CLTV")
 
 ################################ K means algorithm - hierarchical clustering  ###############################################
 head(complete.df) 
+#write.csv(complete.df,"/Users/vinemerline/Desktop/CapstoneProject/complete.csv", row.names = FALSE)
+
 kmeanshc.df<-complete.df[c(1,2,3,4)]
 head(kmeanshc.df)
 summary(kmeanshc.df)
@@ -493,8 +495,9 @@ head(kmeans.non.hc.df)
 aggregate(kmeans.non.hc.df$Monetary, by=list(kmeans.non.hc.df$cluster), FUN=mean)
 aggregate(kmeans.non.hc.df$Frequency, by=list(kmeans.non.hc.df$cluster), FUN=mean)
 aggregate(kmeans.non.hc.df$Recency, by=list(kmeans.non.hc.df$cluster), FUN=mean)
-######################################## predict sales - knn algorithm ########################################################
+######################################## predict sales greater than means sales - knn algorithm ########################################################
 head(complete.df) 
+summary(sales.df)
 sales.df<-complete.df[c(1,2,3,4,8,13)]
 head(sales.df)
 sales.df$Frequency<-as.numeric(sales.df$Frequency)
@@ -524,8 +527,11 @@ valid.rows <- sample(setdiff(rownames(sales.df), train.rows),
                      dim(sales.df)[1]*0.3)
 test.rows <- setdiff(rownames(sales.df), union(train.rows, valid.rows))
 train.df <- sales.df[train.rows, ]
+dim(train.df)
 valid.df <- sales.df[valid.rows, ]
+dim(valid.df)
 test.df <- sales.df[test.rows, ]
+dim(test.df)
 
 
 # initialize normalized training, validation data, assign (temporarily) data frames to originals
@@ -724,7 +730,7 @@ sales.df[attr(sales_knn_test.pred, "nn.index"),]
 #3358   541.53        36      39 2.613554          0
 #143    519.61        34      39 1.419725          0
 #summary(sales_knn_test.pred)
-######################################## predict sales - decision trees ##############
+######################################## predict sales greater than mean sales - decision trees ##############
 
 sales.df<-complete.df[c(1,2,3,4,8,13)]
 head(sales.df)
@@ -1240,7 +1246,7 @@ set.seed(1)
 ksboost1<-boosting(sales_high ~ ., data = kstraining.df,boos = TRUE, mfinal = 10, control = (minsplit = 0))
 
 ksboost1.pred.valid <- predict(ksboost1,ksvalidation.df,type = "class")
-# generate confusion matrix for training data
+# generate confusion matrix for validation data
 confusionMatrix(as.factor(ksboost1.pred.valid$class), as.factor(ksvalidation.df$sales_high))
 
 #Confusion Matrix and Statistics
@@ -1273,7 +1279,7 @@ confusionMatrix(as.factor(ksboost1.pred.valid$class), as.factor(ksvalidation.df$
    
 
 ksboost2.pred.test <- predict(ksboost1,kstesting.df,type = "class")
-# generate confusion matrix for training data
+# generate confusion matrix for testing data
 confusionMatrix(as.factor(ksboost2.pred.test$class), as.factor(kstesting.df$sales_high))
 #Confusion Matrix and Statistics
 
@@ -1303,7 +1309,7 @@ confusionMatrix(as.factor(ksboost2.pred.test$class), as.factor(kstesting.df$sale
 #       'Positive' Class : 0 
                   
 
-################################## predict sales: Logit ######################################################################
+################################## predict sales greater than mean sales: Logit ######################################################################
 sales.df<-complete.df[c(1,2,3,4,8,13)]
 head(sales.df)
 sales.df$Frequency<-as.numeric(sales.df$Frequency)
@@ -2028,4 +2034,118 @@ inspect(head(sort(retailApriorRules, by = "lift"), n = 6))
 #  ROUND SNACK BOXES SET OF4 WOODLAND } => {PLASTERS IN TIN WOODLAND ANIMALS}  0.09574468  0.7500000 0.1276596 7.050000     9
 #[5] {LUNCH BOX WITH CUTLERY RETROSPOT }   => {STRAWBERRY LUNCH BOX WITH CUTLERY} 0.09574468  0.9000000 0.1063830 6.042857     9
 #[6] {STRAWBERRY LUNCH BOX WITH CUTLERY}   => {LUNCH BOX WITH CUTLERY RETROSPOT } 0.09574468  0.6428571 0.1489362 6.042857     9
+
+#################################### Predict Sales Amount -KNN ################################################################
+head(complete.df) 
+sales.df<-complete.df[c(1,2,3,4,8,13)]
+head(sales.df)
+summary(sales.df)
+sales.df$Frequency<-as.numeric(sales.df$Frequency)
+
+sales.df[,"total_sales"]
+sales.df$total_sales <- findInterval(sales.df$total_sales, c(0, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000), rightmost.closed = TRUE)
+sales.df$total_sales
+sales.df$total_sales = as.factor(sales.df$total_sales)
+head(sales.df)
+sales.df<-sales.df[c(1,2,3,4,6,5)]
+head(sales.df)
+
+sales.df <- sales.df[,-c(1)]
+head(sales.df)
+names(sales.df)
+head(sales.df)
+dim(sales.df)
+summary(sales.df)
+
+new.df <- data.frame("Monetary"=1000,"Frequency"=45, "Recency"=90, "CLTV"=1)
+new.df
+dim(new.df)
+
+set.seed(1)
+## partitioning into training (50%), validation (30%), test (20%) randomly sample 50% of the row IDs for training
+train.rows <- sample(rownames(sales.df), dim(sales.df)[1]*0.5)
+valid.rows <- sample(setdiff(rownames(sales.df), train.rows), 
+                     dim(sales.df)[1]*0.3)
+test.rows <- setdiff(rownames(sales.df), union(train.rows, valid.rows))
+train.df <- sales.df[train.rows, ]
+dim(train.df)
+head(train.df)
+valid.df <- sales.df[valid.rows, ]
+dim(valid.df)
+test.df <- sales.df[test.rows, ]
+dim(test.df)
+
+
+# initialize normalized training, validation data, assign (temporarily) data frames to originals
+train.norm.df <- train.df
+valid.norm.df <- valid.df
+test.norm.df <- test.df
+sales.norm.df <- sales.df
+head(train.norm.df)
+summary(train.norm.df)
+new.norm.df <- new.df
+new.norm.df
+
+# use preProcess() from the caret package to normalize the variables.
+library(caret)
+#train.df$total_sales = as.factor(train.df$total_sales)
+norm.values <- preProcess(train.df[ , c(1:4, 5)], method=c("center", "scale"))
+head(norm.values)
+norm.values
+train.norm.df[ , c(1:4, 5)] <- predict(norm.values, train.df[ ,c(1:4, 5)])
+head(train.norm.df)
+##Similarly scale valid data, bank data and the test data
+valid.norm.df[ ,c(1:4, 5)] <- predict(norm.values, valid.df[ , c(1:4, 5)])
+sales.norm.df[ , c(1:4, 5)] <- predict(norm.values, sales.df[ , c(1:4, 5)])
+test.norm.df[ , c(1:4, 5)] <- predict(norm.values, test.df[ , c(1:4, 5)])
+head(new.df[ , c(1:4)])
+norm.values
+new.norm.df[ , c(1:4)] <- predict(norm.values, new.df[ , c(1:4)])
+new.norm.df
+
+# initialize a data frame with two columns: k, and calculating accuracy for valid dataset
+sales_accuracy1.df <- data.frame(k = seq(1, 40 , 1), accuracy = rep(0, 40)) #rep just repeats a value (0 in this case) 14 times. We are just initiating accuracy
+sales_accuracy1.df
+library(FNN)
+#install.packages("forecast")
+library(forecast)
+# compute knn for different k on validation.
+for(i in 1:40) {
+  #Use knn function with k=i and predict for valid dataset
+  sales_knn1.pred <- knn(train = train.norm.df[ , c(1:4)], test = valid.norm.df[ , c(1:4)], 
+                         cl = train.norm.df[, 5], k = i)
+  
+  sales_accuracy1.df[i, 2] <- confusionMatrix(sales_knn1.pred, as.factor(valid.df[, 5]))$overall[1] 
+}  
+sales_accuracy1.df
+
+#accuracy on valid data with best k (k=22) using training data to train and valid data as test
+sales_knn_valid.pred <- knn(train = train.norm.df[ , c(1:4)], test = valid.norm.df[ , c(1:4)], 
+                            cl = train.norm.df[, 5], k = 22)
+confusionMatrix(sales_knn_valid.pred, as.factor(valid.df[, 5]))
+             
+
+#accuracy on valid data with best k (k=22) using full dataset to train and valid data as test
+sales_knn_valid.pred <- knn(train = sales.norm.df[ , c(1:4)], test = valid.norm.df[ , c(1:4)], 
+                            cl = sales.norm.df[, 5], k = 22)
+confusionMatrix(sales_knn_valid.pred, as.factor(valid.df[, 5]))
+         
+
+#accuracy on valid data with best k (k=22) using training data to train and test data as test
+sales_knn_valid.pred <- knn(train = train.norm.df[ , c(1:4)], test = test.norm.df[ , c(1:4)], 
+                            cl = train.norm.df[, 5], k = 22)
+confusionMatrix(sales_knn_valid.pred, as.factor(test.df[, 5]))
+            
+
+#accuracy on test data with best k (k=22)
+sales_knn_test.pred <- knn(train = sales.norm.df[ , c(1:4)], test = test.norm.df[ , c(1:4)], 
+                           cl = sales.df[, 5], k = 22)
+confusionMatrix(sales_knn_test.pred, as.factor(test.df[, 5]))
+           
+#new data
+sales_knn_test.pred <- knn(train = sales.norm.df[ , c(1:4)], test = new.norm.df, 
+                           cl = sales.df[, 5], k = 22)
+row.names(sales.df)[attr(sales_knn_test.pred, "nn.index")]
+ 
+sales.df[attr(sales_knn_test.pred, "nn.index"),]
 
